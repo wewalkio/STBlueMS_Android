@@ -35,71 +35,85 @@
  * OF SUCH DAMAGE.
  */
 
-package com.st.blesensor.cloud.util;
+/*package com.st.blesensor.cloud.GenericMqtt;*/
+package com.st.blesensor.cloud.TagoIO;
 
-import com.st.blesensor.cloud.CloudIotClientConnectionFactory;
+import android.content.Context;
+import android.net.Uri;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.st.blesensor.cloud.util.MqttClientConnectionFactory;
+import com.st.BlueSTSDK.Feature;
+import com.st.BlueSTSDK.Node;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 
-public abstract class MqttClientConnectionFactory implements CloudIotClientConnectionFactory {
+/**
+ * create a connection to a generic mqtt broker
+ */
+class TagoIOFactory extends MqttClientConnectionFactory {
 
-    protected class MqttClient implements CloutIotClient{
-        public final MqttAndroidClient mqtt;
+    private static final String BROKER_URL = "ssl://mqtt.tago.io:8883";
+    private static final String USER = "token";
 
-        public MqttClient(MqttAndroidClient client) {
-            this.mqtt = client;
-        }
+    private String mPassword;
+    private String mClientId;
+
+
+    TagoIOFactory(String deviceId, @NonNull String token) {
+        mPassword = token;
+        mClientId = deviceId;
     }
 
-    protected static MqttAndroidClient extractMqttClient(CloutIotClient client){
-        if(!(client instanceof MqttClient))
-            return null;
-        return ((MqttClient) client).mqtt;
-    }
 
-    protected static IMqttActionListener buildMqttListener(final ConnectionListener listener){
-        return  new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-
-                listener.onSuccess();
-            }
-
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                listener.onFailure(exception);
-            }
-        };
+    @Override
+    public CloutIotClient createClient(Context ctx) {
+        return new MqttClient(
+                new MqttAndroidClient(ctx, BROKER_URL,mClientId)
+        );
     }
 
     @Override
-    public void disconnect(CloutIotClient client) throws Exception {
-        MqttAndroidClient mqttClient = extractMqttClient(client);
-        if (mqttClient != null) {
-            mqttClient.disconnect();
-        }
+    public boolean connect(Context ctx, CloutIotClient connection,
+                           ConnectionListener connectionListener)
+            throws Exception {
+
+        IMqttAsyncClient client = extractMqttClient(connection);
+
+
+        MqttConnectOptions connOpts = new MqttConnectOptions();
+        connOpts.setCleanSession(true);
+        connOpts.setUserName(USER);
+        connOpts.setPassword(mPassword.toCharArray());
+
+
+        return client.connect(connOpts,null,buildMqttListener(connectionListener))!=null;
     }
 
     @Override
-    public void destroy(CloutIotClient client) {
-        MqttAndroidClient mqttClient = extractMqttClient(client);
-        if (mqttClient != null) {
-            mqttClient.close();
-            mqttClient.unregisterResources();
-        }
+    public Feature.FeatureListener getFeatureListener(CloutIotClient broker,long minUpdateIntervalMs) {
+        return new TagoIOCentralFeatureListener(extractMqttClient(broker),minUpdateIntervalMs);
+    }
+
+    @Nullable
+    @Override
+    public Uri getDataPage() {
+        return null;
     }
 
     @Override
-    public boolean isConnected(CloutIotClient client) {
-        MqttAndroidClient mqttClient = extractMqttClient(client);
-        try {
-            return (mqttClient != null && mqttClient.isConnected());
-        }catch (IllegalArgumentException e){
-            //is connect can return illegal argument exception if the client is not available
-            // https://github.com/eclipse/paho.mqtt.android/issues/238
-            return false;
-        }
+    public boolean supportFeature(Feature f) {
+        return TagoIOCentralFeatureListener.isSupportedFeature(f);
     }
+
+    @Override
+    public boolean enableCloudFwUpgrade(Node node, CloutIotClient mqttConnection, FwUpgradeAvailableCallback callback) {
+        return false;
+    }
+
+
 }

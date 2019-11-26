@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagoio_tokenHint">Device Token</string>
+    <string name="tagoio_tokenEmpty">Device Token can not be empty</string>
+    <string name="tagoio_deviceIdHint">Device Name</string>
+    <string name="tagoio_deviceIdEmpty">Device Name can not be empty</string>
+
+</resources>

@@ -73,6 +73,7 @@ import com.st.blesensor.cloud.CloudIotClientConnectionFactory;
 import com.st.blesensor.cloud.GenericMqtt.GenericMqttConfigurationFactory;
 import com.st.blesensor.cloud.IBMWatson.IBMWatsonConfigFactory;
 import com.st.blesensor.cloud.IBMWatson.IBMWatsonQuickStartConfigFactory;
+import com.st.blesensor.cloud.TagoIO.TagoIOConfigurationFactory;
 import com.st.blesensor.cloud.util.CloudFwUpgradeRequestDialog;
 import com.st.blesensor.cloud.util.MqttClientConfigAdapter;
 import com.st.BlueMS.demos.util.DemoWithNetFragment;
@@ -107,6 +108,7 @@ public class CloudLogFragment extends DemoWithNetFragment implements
 
 
     private List<CloudIotClientConfigurationFactory> mCloudProviders =  Arrays.asList(
+            new TagoIOConfigurationFactory(),
             new IBMWatsonQuickStartConfigFactory(),
             new IBMWatsonConfigFactory(),
             new AzureIoTCentralConfigFactory(),
